@@ -15,6 +15,8 @@ provider:
     PRODUCT_BUCKET_NAME: ${env:PRODUCT_BUCKET_NAME}
     DB_INVENTORY_NAME: ${env:DB_INVENTORY_NAME}
     SOURCE_URL: ${env:SOURCE_URL}
+    EVENT_BUS: ${env:EVENT_BUS}
+    EVENT_BUS_NAME: ${env:EVENT_BUS_NAME}
     
   iamRoleStatements:
     - Effect: "Allow" # xray permissions (required)
@@ -100,7 +102,7 @@ functions:
     handler: handlers.product_inv_handler.post_product_inv
     events:
       - eventBridge:
-          eventBus: arn:aws:events:us-east-2:272898481162:event-bus/products-event-bus
+          eventBus: ${env:EVENT_BUS}
           pattern:
             source:
               - ${env:SOURCE_URL}
@@ -110,7 +112,7 @@ functions:
     handler: handlers.product_inv_handler.delete_product_inv
     events:
       - eventBridge:
-          eventBus: arn:aws:events:us-east-2:272898481162:event-bus/products-event-bus
+          eventBus: ${env:EVENT_BUS}
           pattern:
             source:
               - ${env:SOURCE_URL}
@@ -120,7 +122,7 @@ functions:
     handler: handlers.product_inv_handler.update_total_quantity
     events:
       - eventBridge:
-          eventBus: arn:aws:events:us-east-2:272898481162:event-bus/products-event-bus
+          eventBus: ${env:EVENT_BUS}
           pattern:
             source:
               - ${env:SOURCE_URL}
