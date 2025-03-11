@@ -1,5 +1,4 @@
 import json
-import boto3
 import decimal
 from decimal import Decimal
 import string
@@ -12,21 +11,25 @@ def build_update_expression(body):
 
     product_name = body.get("product_name")
     brand_name = body.get("brand_name")
+    category = body.get("category")
     price = body.get("price")
     quantity = body.get("quantity")
 
     if product_name:
         expression_to_update.append("product_name = :val1")
         expression_val[":val1"] = product_name
+    if category:
+        expression_to_update.append("category = :val2")
+        expression_val[":val2"] = category
     if brand_name:
-        expression_to_update.append("brand_name = :val2")
-        expression_val[":val2"] = brand_name
+        expression_to_update.append("brand_name = :val3")
+        expression_val[":val3"] = brand_name
     if price is not None:
-        expression_to_update.append("price = :val3")
-        expression_val[":val3"] = price
+        expression_to_update.append("price = :val4")
+        expression_val[":val4"] = price
     if quantity is not None:
-        expression_to_update.append("quantity = :val4")
-        expression_val[":val4"] = quantity
+        expression_to_update.append("quantity = :val5")
+        expression_val[":val5"] = quantity
 
     return expression_to_update, expression_val
 
@@ -44,7 +47,10 @@ def validate_update_product(product_id, body):
     if "product_name" in body:
         if not isinstance(body["product_name"], str) or not body["product_name"].strip():
             raise ValueError("Product name must not be empty")
-
+    if "category" in body:
+        if not isinstance(body["category"], str) or not body["category"].strip():
+            raise ValueError("category name must not be empty")
+        
     if "price" in body:
         try:
             price = decimal.Decimal(str(body["price"]))
