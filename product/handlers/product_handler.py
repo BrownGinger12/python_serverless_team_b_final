@@ -1,6 +1,4 @@
 import json
-import boto3
-import decimal
 import urllib
 import csv
 from decimal import Decimal
@@ -45,11 +43,21 @@ def get_all_products(event, context):
         
         return {
             "statusCode": 200,
-            "body": json.dumps(response, cls=DecimalEncoder)
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
         }
         
     except Exception as e:
-        return {"statusCode": 500, "message": str(e)}
+        return {"statusCode": 500, "message": str(e),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }}
     
 
 def post_product(event, context):
@@ -58,28 +66,45 @@ def post_product(event, context):
         
         product = Product(
             product_id=body["product_id"],
+            category=body["category"],
             product_name=body["product_name"],
             price=body["price"],
             quantity=body["quantity"],
-            brand_name=body.get("brand_name", "")
+            brand_name=body.get("brand_name", ""),
+            image_path=body.get("image_path", ""),
         )
         
         response = product.create()
         
         if response["statusCode"] != 200:
             return {
-                "body": response
+                "body": json.dumps(response, cls=DecimalEncoder),
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",  # Allow all origins
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                    "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+                }
             }
         #logger.send_log({"event": "product_created", "body": json.dumps(body, cls=DecimalEncoder), "status": "Success"})
         
         return {
-            "body": response,
-            "data": json.dumps(body, cls=DecimalEncoder)
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "data": json.dumps(body, cls=DecimalEncoder),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
         }
         
 
     except Exception as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)})}
+        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",  # Allow all origins
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                    "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+                }}
         
 def get_product(product_id):
     try:
@@ -87,11 +112,21 @@ def get_product(product_id):
         response = product.get()
         
         return {
-            "body": response
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "GET",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
         }
         
     except Exception as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)})}
+        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "GET",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }}
         
 def delete_product(product_id):
     try:
@@ -99,11 +134,21 @@ def delete_product(product_id):
         response = product.delete()
         
         return {
-            "body": response
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "DELETE",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
         }
         
     except Exception as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)})}
+        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "DELETE",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }}
 
 def update_product(product_id, body):
     try:
@@ -112,11 +157,21 @@ def update_product(product_id, body):
         response = product.update(body)
         
         return {
-            "body": response
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
         }
         
     except ValueError as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)})}
+        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }}
 
 def batch_create_products(event, context):
     print("file uploaded trigger")

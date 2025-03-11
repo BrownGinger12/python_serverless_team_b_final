@@ -10,7 +10,6 @@ import os
 from gateways.dynamodb_gateway import DynamoDB
 
 db_handler = DynamoDB(os.getenv("DB_INVENTORY_NAME"))
-import boto3
 
 def get_current_datetime():
     """Returns the current date and time in 'YYYY-MM-DD HH:MM:SS' format."""

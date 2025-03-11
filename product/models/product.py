@@ -2,25 +2,30 @@ import decimal
 import os
 import json
 from gateways.dynamodb_gateway import DynamoDB
+from gateways.s3_gateway import S3Gateway
 from models.EventBridgeEvent import EventbridgeEvent
 from helper.helper_func import build_update_expression, validate_update_product, DecimalEncoder
 from gateways.sqs_gateway import SQSGateway
 
 sqs_client = SQSGateway(os.getenv("SQS_QUEUE_NAME"))
 db_handler = DynamoDB(os.getenv("DB_NAME"))
+image_bucket = S3Gateway(os.getenv("IMAGE_BUCKET_NAME"))
 
 class Product:
-    def __init__(self, product_id, product_name="", price=0.0, quantity=0, brand_name=""):
+    def __init__(self, product_id, product_name="", category="", price=0.0, quantity=0, brand_name="", image_path=""):
         self.product_id = product_id
         self.product_name = product_name
+        self.category = category
         self.brand_name = brand_name
         self.price = price
         self.quantity = quantity
+        self.image_path = image_path
 
     def get_data(self):
         return {
             "product_id": self.product_id,
             "product_name": self.product_name,
+            "category": self.category,
             "brand_name": self.brand_name,
             "price": self.price,
             "quantity": self.quantity
@@ -33,6 +38,7 @@ class Product:
     def validate_product(self):
         self.validate_product_id(self.product_id)
         self.validate_product_name(self.product_name)
+        self.validate_category(self.category)
         self.validate_price(self.price)
         self.validate_quantity(self.quantity)
 
@@ -46,6 +52,11 @@ class Product:
         """Checks if product_name is empty."""
         if not isinstance(product_name, str) or not product_name.strip():
             raise ValueError("Product name must not be empty")
+        
+    def validate_category(self, category):
+        """Checks if category is empty."""
+        if not isinstance(category, str) or not category.strip():
+            raise ValueError("category must not be empty")
 
     def validate_price(self, price):
         """Checks if price is a decimal and non-negative."""
@@ -63,6 +74,9 @@ class Product:
         self.validate_product()
         
         response = db_handler.put_item(self.get_data())
+
+        if self.image_path:
+            image_bucket.upload_file(self.image_path, self.product_id)
     
         if response["statusCode"] == 200:
             print("Notice: Product added successfully!")
