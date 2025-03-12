@@ -65,6 +65,8 @@ def post_order(event, context):
         order = Order(
             order_id=body["order_id"],
             product_id=body["product_id"],
+            product_name=body["product_name"],
+            user_id=body["user_id"],
             datetime=get_current_datetime(),
             contact_number=body["contact_number"],
             quantity=body["quantity"],
@@ -76,7 +78,7 @@ def post_order(event, context):
         
         if response["statusCode"] != 200:
             return {
-                "body": json.dumps(response, cls=DecimalEncoder),
+                "body": response,
                 "headers": {
                     "Access-Control-Allow-Origin": "*",  # Allow all origins
                     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
@@ -86,8 +88,8 @@ def post_order(event, context):
         #logger.send_log({"event": "product_created", "body": json.dumps(body, cls=DecimalEncoder), "status": "Success"})
         
         return {
-            "body": json.dumps(response, cls=DecimalEncoder),
-            "data": json.dumps(body, cls=DecimalEncoder),
+            "body": response,
+            "data":body,
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
@@ -155,7 +157,7 @@ def update_order(order_id, body):
         response = order.update(body)
         
         return {
-            "body": json.dumps(response, cls=DecimalEncoder),
+            "body": response,
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
@@ -164,7 +166,7 @@ def update_order(order_id, body):
         }
         
     except ValueError as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
+        return {"statusCode": 500, "message": str(e),
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods

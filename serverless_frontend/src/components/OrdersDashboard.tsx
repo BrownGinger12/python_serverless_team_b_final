@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Truck, Clock, Search, Filter, ChevronDown, Trash2, AlertTriangle } from 'lucide-react';
+import { Check, Truck, Clock, Search, Filter, ChevronDown, Trash2, AlertTriangle, X } from 'lucide-react';
 import axiosClient from '../client/AxiosClient';
+import axios from 'axios';
+
 
 // Define TypeScript interfaces
 interface Order {
@@ -9,11 +11,11 @@ interface Order {
     datetime: string;
     number: string;
     quantity: number;
-    order_status: 'pending' | 'out for delivery' | 'delivered';
+    order_status: 'pending' | 'out for delivery' | 'delivered' | 'cancelled';
     total_price: number;
 }
 
-type StatusOption = 'pending' | 'out for delivery' | 'delivered';
+type StatusOption = 'pending' | 'out for delivery' | 'delivered' | 'cancelled';
 
 const OrdersDashboard = () => {
     // Sample orders data
@@ -37,7 +39,7 @@ const OrdersDashboard = () => {
         }).format(date);
     };
 
-    const updateOrder = async (order_id: string, new_status: string) => {
+    const updateOrder = async (order_id: string, new_status: string, contact_number: string) => {
         const response = await axiosClient.put(`/order/${order_id}`, { "order_status": new_status }, {
             headers: {
                 "Content-Type": "application/json",
@@ -45,19 +47,57 @@ const OrdersDashboard = () => {
             withCredentials: false
         })
 
+        const message = `Your order status has been set to "${new_status}". Order ID: ${order_id}. Thank you!`;
+
+        if (response.data.body.statusCode === 200) {
+            sendSMS(contact_number, message)
+        }
+
         console.log(response)
     }
 
 
+    const sendSMS = async (contact_number: string, message: string) => {
+
+        const api_key = import.meta.env.VITE_SMS_API_KEY;
+        try {
+            const response = await axios.post(
+                "https://app.philsms.com/api/v3/sms/send",
+                {
+                    recipient: contact_number,
+                    sender_id: "PhilSMS",
+                    type: "plain",
+                    message: message,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${api_key}`,
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                }
+            );
+
+
+            
+            console.log("SMS Sent Successfully:", response.data);
+        } catch (error) {
+            console.error("Error Sending SMS:", error);
+        }
+    };
+
+
+
     // Handle status change
-    const handleStatusChange = (orderId: string, newStatus: StatusOption) => {
+    const handleStatusChange = (orderId: string, newStatus: StatusOption, contact_number: string) => {
         setOrders(orders.map(order =>
             order.order_id === orderId
                 ? { ...order, order_status: newStatus }
                 : order
         ));
 
-        updateOrder(orderId, newStatus)
+        updateOrder(orderId, newStatus, contact_number)
+
     };
 
     // Handle delete order
@@ -115,6 +155,11 @@ const OrdersDashboard = () => {
                 textColor = 'text-green-800';
                 icon = <Check size={14} className="mr-1" />;
                 break;
+            case 'cancelled':
+                bgColor = 'bg-red-100';
+                textColor = 'text-red-800';
+                icon = <X size={14} className="mr-1" />;
+                break;
             default:
                 bgColor = 'bg-gray-100';
                 textColor = 'text-gray-800';
@@ -136,12 +181,13 @@ const OrdersDashboard = () => {
             <div className="flex items-center space-x-2">
                 <select
                     value={order.order_status}
-                    onChange={(e) => handleStatusChange(order.order_id, e.target.value as StatusOption)}
+                    onChange={(e) => handleStatusChange(order.order_id, e.target.value as StatusOption, order.number)}
                     className="block w-40 text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                     <option value="pending">Pending</option>
                     <option value="out for delivery">Out for Delivery</option>
                     <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancel</option>
                 </select>
 
                 <button
