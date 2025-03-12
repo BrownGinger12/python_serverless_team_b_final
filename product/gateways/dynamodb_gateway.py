@@ -17,10 +17,19 @@ class DynamoDB:
 
     def put_item(self, item):
         """Inserts a new item only if it does not already exist."""
-        key = {"product_id": item["product_id"]}
+
+        key = {}
+
+        if "order_id" in item:
+            key["order_id"] = item["order_id"]
+
+        elif "product_id" in item:
+            key["product_id"] = item["product_id"]
+
+            if "datetime" in item:  
+                key["datetime"] = item["datetime"]
         
-        if "datetime" in item:  
-            key["datetime"] = item["datetime"]
+        
     
         if self.item_exists(key):
             print(self.item_exists(key))
@@ -76,8 +85,6 @@ class DynamoDB:
             return {"statusCode": 200, "message": "Item deleted successfully"}
         except Exception as e:
             return {"statusCode": 500, "message": str(e)}
-    
-    from boto3.dynamodb.conditions import Key
 
     def query_items(self, product_id):
         """Queries items from DynamoDB using only the partition key (product_id)."""

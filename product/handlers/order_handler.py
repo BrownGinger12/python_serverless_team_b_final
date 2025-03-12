@@ -1,31 +1,28 @@
-import json
-import urllib
-import csv
 from decimal import Decimal
-from models.product import Product
+import json
 from gateways.dynamodb_gateway import DynamoDB
-from gateways.s3_gateway import S3Gateway
-from gateways.logs_gateway import CloudWatchLogger
 from helper.helper_func import DecimalEncoder, generate_code
 import os
+from models.order import Order
+from datetime import datetime
 
 #gateway initialization
-db_handler = DynamoDB(os.getenv("DB_NAME"))
-product_s3 = S3Gateway(os.getenv("PRODUCT_BUCKET_NAME"))
-sqs_s3 = S3Gateway(os.getenv("SQS_BUCKET_NAME"))
-logger = CloudWatchLogger("products-created-logs", "current-logs")
+db_handler = DynamoDB(os.getenv("ORDERS_TABLE"))
+
+def get_current_datetime():
+    """Returns the current date and time in 'YYYY-MM-DD HH:MM:SS' format."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-
-def product_handler(event, context):
+def order_handler(event, context):
     http_method = event["requestContext"]["http"]["method"]
-    product_id = event.get("pathParameters", {}).get("product_id", "none")
+    order_id = event.get("pathParameters", {}).get("order_id", "none")
 
 
     HANDLER = {
-        "GET": lambda: get_product(product_id), 
-        "DELETE": lambda: delete_product(product_id), 
-        "PUT": lambda: update_product(product_id, json.loads(event["body"], parse_float=Decimal))
+        "GET": lambda: get_order(order_id), 
+        "DELETE": lambda: delete_order(order_id), 
+        "PUT": lambda: update_order(order_id, json.loads(event["body"], parse_float=Decimal))
     }
 
     if http_method not in HANDLER:
@@ -33,8 +30,9 @@ def product_handler(event, context):
     
     
     return HANDLER[http_method]()
-        
-def get_all_products(event, context):
+
+
+def get_all_orders(event, context):
     try:
         response = db_handler.get_all_items()
         
@@ -45,7 +43,6 @@ def get_all_products(event, context):
             "statusCode": 200,
             "body": json.dumps(response, cls=DecimalEncoder),
             "headers": {
-                "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
@@ -59,27 +56,27 @@ def get_all_products(event, context):
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
-    
 
-def post_product(event, context):
+
+def post_order(event, context):
     try:
         body = json.loads(event["body"], parse_float=Decimal)
         
-        product = Product(
+        order = Order(
+            order_id=body["order_id"],
             product_id=body["product_id"],
-            category=body["category"],
-            product_name=body["product_name"],
-            price=body["price"],
+            datetime=get_current_datetime(),
+            contact_number=body["contact_number"],
             quantity=body["quantity"],
-            brand_name=body.get("brand_name", ""),
-            image_path=body.get("image_path", ""),
+            status="pending",
+            total_price=body["total_price"],
         )
         
-        response = product.create()
+        response = order.create()
         
         if response["statusCode"] != 200:
             return {
-                "body": response,
+                "body": json.dumps(response, cls=DecimalEncoder),
                 "headers": {
                     "Access-Control-Allow-Origin": "*",  # Allow all origins
                     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
@@ -89,8 +86,8 @@ def post_product(event, context):
         #logger.send_log({"event": "product_created", "body": json.dumps(body, cls=DecimalEncoder), "status": "Success"})
         
         return {
-            "body": response,
-            "data": body,
+            "body": json.dumps(response, cls=DecimalEncoder),
+            "data": json.dumps(body, cls=DecimalEncoder),
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
@@ -107,13 +104,13 @@ def post_product(event, context):
                     "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
                 }}
         
-def get_product(product_id):
+def get_order(order_id):
     try:
-        product = Product(product_id=product_id)
-        response = product.get()
+        order = Order(order_id=order_id)
+        response = order.get()
         
         return {
-            "body": response["data"],
+            "body": json.dumps(response, cls=DecimalEncoder),
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "GET",  # Allowed HTTP methods
@@ -129,10 +126,10 @@ def get_product(product_id):
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
         
-def delete_product(product_id):
+def delete_order(order_id):
     try:
-        product = Product(product_id=product_id)
-        response = product.delete()
+        order = Order(order_id=order_id)
+        response = order.delete()
         
         return {
             "body": response,
@@ -151,14 +148,14 @@ def delete_product(product_id):
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
 
-def update_product(product_id, body):
+def update_order(order_id, body):
     try:
-        product = Product(product_id=product_id)
+        order = Order(order_id=order_id)
         
-        response = product.update(body)
+        response = order.update(body)
         
         return {
-            "body": response,
+            "body": json.dumps(response, cls=DecimalEncoder),
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
@@ -167,73 +164,11 @@ def update_product(product_id, body):
         }
         
     except ValueError as e:
-        return {"statusCode": 500, "message": str(e),
+        return {"statusCode": 500, "body": json.dumps({"message": str(e)}),
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
 
-def batch_create_products(event, context):
-    print("file uploaded trigger")
-    print(event)
     
-    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
-    localFilename = f'/tmp/for_create.csv'
-    
-    try:
-        product_s3.download_file(key, localFilename)
-        
-        with open(localFilename, 'r') as f:
-            csv_reader = csv.DictReader(f)
-            for row in csv_reader:
-                product = Product(
-                    product_id=row['product_id'],
-                    product_name=row['product_name'],
-                    price=Decimal(row['price']),
-                    quantity=int(row['quantity']),
-                    brand_name=row.get("brand_name", "")
-                )
-                #logger.send_log({"event": "product_created", "body": json.dumps(row, cls=DecimalEncoder), "status": "Success"})
-                product.create()
-        print("Notice: products from the csv file successfully added to the products table")
-    except ValueError as e:
-        print(f"Error: {e}")
-
-def batch_delete_products(event, context):
-    print("file uploaded trigger")
-    print(event)
-    
-    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
-    localFilename = f'/tmp/for_create.csv'
-    
-    try:
-        product_s3.download_file(key, localFilename)
-        
-        with open(localFilename, 'r') as f:
-            csv_reader = csv.DictReader(f)
-            for row in csv_reader:
-                product = Product(product_id=row['product_id'])
-                product.delete()
-        print("Notice: products from the csv file successfully deleted")
-    except ValueError as e:
-        print(f"Error: {e}")
-
-def receive_message_from_sqs(event, context):
-    print(event)
-    fieldnames=["product_id", "product_name", "price", "quantity", "brand_name"]
-    file_randomized_prefix = generate_code("pycon_", 8)
-    file_name = f'/tmp/product_created_{file_randomized_prefix}.csv'
-    object_name = f'product_created_{file_randomized_prefix}.csv'
-    
-    
-    with open(file_name, 'w') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        for payload in event["Records"]:
-            json_payload = json.loads(payload["body"])
-            writer.writerow(json_payload)
-    
-    response = sqs_s3.upload_file(file_name, object_name)
-        
-    print("All done!")
-    return {}

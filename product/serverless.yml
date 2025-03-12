@@ -5,7 +5,7 @@ service: python-serverless-miles
 
 provider:
   name: aws
-  runtime: python3.12
+  runtime: python3.10
   role: ${env:IAM_ROLE_ARN}
   stage: ${opt:stage, 'dev'}
   environment:
@@ -30,6 +30,8 @@ plugins:
   - serverless-dotenv-plugin
   - serverless-offline
   - serverless-prune-plugin
+  - serverless-python-requirements
+   
 
 custom:
   prune:
@@ -135,3 +137,38 @@ functions:
       - httpApi:
           path: /add_stocks
           method: post
+  
+  create_order:
+    handler: handlers.order_handler.post_order
+    events:
+      - httpApi:
+          path: /post_order
+          method: post
+  
+  order:
+    handler: handlers.order_handler.order_handler
+    events:
+      - httpApi:
+          path: /order/{order_id}
+          method: get
+      - httpApi:
+          path: /order/{order_id}
+          method: put
+      - httpApi:
+          path: /order/{order_id}
+          method: delete
+  
+  get_all_orders:
+    handler: handlers.order_handler.get_all_orders
+    events:
+      - httpApi:
+          path: /get_orders
+          method: get
+  
+  generate_pc:
+    handler: handlers.pc_build_handler.generate_pc_build
+    events:
+      - httpApi:
+          path: /pc_build/{amount}
+          method: get
+
