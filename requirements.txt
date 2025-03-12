@@ -60,3 +60,4 @@ systemd-python==235
 urllib3==1.25.10
 wcwidth==0.2.5
 wrapt==1.17.2
+openai

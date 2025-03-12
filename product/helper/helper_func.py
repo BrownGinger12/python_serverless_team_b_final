@@ -14,6 +14,7 @@ def build_update_expression(body):
     category = body.get("category")
     price = body.get("price")
     quantity = body.get("quantity")
+    status = body.get("order_status")
 
     if product_name:
         expression_to_update.append("product_name = :val1")
@@ -30,6 +31,9 @@ def build_update_expression(body):
     if quantity is not None:
         expression_to_update.append("quantity = :val5")
         expression_val[":val5"] = quantity
+    if status is not None:
+        expression_to_update.append("order_status = :val6")
+        expression_val[":val6"] = status
 
     return expression_to_update, expression_val
 
@@ -63,6 +67,10 @@ def validate_update_product(product_id, body):
     if "quantity" in body:
         if not isinstance(body["quantity"], (int, float)):
             raise ValueError("Quantity must be a number")
+        
+    if "order_status" in body:
+          if not isinstance(body["order_status"], str) or not body["order_status"].strip():
+            raise ValueError("Status name must not be empty")
 
 def generate_code(prefix, string_length):
   letters = string.ascii_uppercase

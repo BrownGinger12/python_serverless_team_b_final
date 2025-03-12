@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Package, ShoppingCart } from 'lucide-react';
 import PCPartsAdmin from './PCPartsAdmin';
+import OrdersDashboard from './OrdersDashboard';
 
 
 
@@ -49,6 +50,7 @@ const Sidebar: React.FC = () => {
       <div className='w-[80%] h-full'>
 
         {activeItem === "products" && <PCPartsAdmin />}
+        {activeItem === "orders" && <OrdersDashboard />}
       </div>
     </div>
   );

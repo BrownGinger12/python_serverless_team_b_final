@@ -77,7 +77,7 @@ class Product:
 
         if self.image_path:
             image_bucket.upload_file(self.image_path, self.product_id)
-    
+
         if response["statusCode"] == 200:
             print("Notice: Product added successfully!")
             sqs_client.send_message(json.dumps(self.get_data(), cls=DecimalEncoder))

@@ -53,9 +53,6 @@ const PCPartsAdmin: React.FC = () => {
         stock: 0,
         imageUrl: '/api/placeholder/80/80'
     });
-    const [categoryFormValues, setCategoryFormValues] = useState<CategoryFormValues>({
-        name: ''
-    });
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +88,8 @@ const PCPartsAdmin: React.FC = () => {
                 product.category === categoryFilter
             );
         }
+
+        if (categoryFilter === "")
 
         setFilteredProducts(results);
     }, [products, searchTerm, categoryFilter]);
@@ -171,6 +170,10 @@ const PCPartsAdmin: React.FC = () => {
     const deleteProduct = async (product_id: string) => {
         const response = await axiosClient.delete(`/product/${product_id}`)
 
+        if (response.data.body.statusCode === 200) {
+            alert("Product deleted")
+        }
+
         console.log(response)
     }
 
@@ -202,6 +205,10 @@ const PCPartsAdmin: React.FC = () => {
             withCredentials: false
         })
 
+        if (response.data.body.statusCode === 200) {
+            alert("Product Added")
+        }
+
         console.log(response)
     }
 
@@ -221,6 +228,10 @@ const PCPartsAdmin: React.FC = () => {
             },
             withCredentials: false
         })
+
+        if (response.data.body.statusCode === 200) {
+            alert("Product updated")
+        }
 
         console.log(response)
     }
@@ -368,7 +379,7 @@ const PCPartsAdmin: React.FC = () => {
                             Showing {filteredProducts.length} of {products.length} products
                         </p>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto h-[450px] ">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
