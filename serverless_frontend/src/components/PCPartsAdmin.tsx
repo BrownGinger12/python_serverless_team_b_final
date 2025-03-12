@@ -285,6 +285,7 @@ const PCPartsAdmin: React.FC = () => {
         }
     }
 
+
     useEffect(() => {
         const fetchProducts = async () => {
             const prod_data = await getAllProducts(); // Await the async function
@@ -313,7 +314,7 @@ const PCPartsAdmin: React.FC = () => {
         <div className="min-h-screen w-full bg-gray-100 p-6">
             <div className="max-w-6xl mx-auto">
                 <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">PC Parts Shop Admin</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">PC Express Admin</h1>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <button
                             onClick={handleAddProduct}

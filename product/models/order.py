@@ -7,9 +7,11 @@ from helper.helper_func import build_update_expression, validate_update_product
 db_handler = DynamoDB(os.getenv("ORDERS_TABLE"))
 
 class Order:
-    def __init__(self, order_id, product_id="", datetime="", contact_number="", quantity=0, total_price=0, status=""):
+    def __init__(self, order_id, product_id="", user_id="", product_name="", datetime="", contact_number="", quantity=0, total_price=0, status=""):
         self.order_id = order_id
         self.product_id = product_id
+        self.user_id = user_id
+        self.product_name = product_name
         self.datetime = datetime
         self.quantity = quantity
         self.contact_number = contact_number
@@ -20,6 +22,8 @@ class Order:
         return {
             "order_id": self.order_id,
             "product_id": self.product_id,
+            "product_name": self.product_name,
+            "user_id": self.user_id,
             "datetime": self.datetime,
             "contact_number": self.contact_number,
             "quantity": self.quantity,
@@ -30,6 +34,9 @@ class Order:
     def validate_product_order(self):
         self.validate_id(self.order_id)
         self.validate_id(self.product_id)
+        self.validate_contact_number(self.contact_number)
+        self.validate_product_name(self.product_name)
+        self.validate_id(self.user_id)
         self.validate_datetime(self.datetime)
         self.validate_quantity(self.quantity)
         self.validate_price(self.total_price)
@@ -50,6 +57,11 @@ class Order:
         if not isinstance(quantity, (int, float)):
             raise ValueError("Quantity must be a contact_number.")
     
+    def validate_product_name(self, product_name):
+        """Checks if product_name is empty."""
+        if not isinstance(product_name, str) or not product_name.strip():
+            raise ValueError("Product name must not be empty")
+        
     def validate_status(self, status):
         if not status or not isinstance(status, str):
             raise ValueError("Status cannot be empty and must be a string.")
