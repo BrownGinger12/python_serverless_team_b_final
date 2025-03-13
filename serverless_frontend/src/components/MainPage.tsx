@@ -3,6 +3,12 @@ import axiosClient from "../client/AxiosClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+declare global {
+  interface Window {
+    fcWidget?: any; // Declare Freshchat widget globally
+  }
+}
+
 // Define types
 interface Product {
   id: string;
@@ -21,6 +27,7 @@ interface Order {
   price: number;
   quantity: number;
   totalPrice: number;
+  user_id: string | null;
   date: string;
   status: "pending" | "out for delivery" | "delivered" | "cancelled";
 }
@@ -214,6 +221,7 @@ const MainPage: React.FC = () => {
         price: product.price,
         quantity: quantity,
         totalPrice: totalPrice,
+        user_id: userId,
         date: new Date().toLocaleDateString(),
         status: "pending",
       };
@@ -279,6 +287,52 @@ const MainPage: React.FC = () => {
     }
   };
 
+  const fetchOrders = async () => {
+    const order_data = await getAllOrders(); // Await the async function
+
+    console.log("Orders:", order_data);
+
+    const mappedOrders = order_data.map((item: any) => ({
+      id: item.order_id,
+      productId: item.product_id,
+      productName: item.proudct_name,
+      quantity: item.quantity,
+      totalPrice: item.total_price,
+      date: item.datetime,
+      user_id: item.user_id,
+      status: item.order_status
+    }));
+
+    let query = mappedOrders
+
+    if (userId !== null) {
+      query = query.filter((order: { user_id: string }) =>
+        String(order.user_id).toLowerCase() === String(userId).toLowerCase()
+      );
+    }
+
+
+    setOrders(query);
+  };
+
+  const fetchProducts = async () => {
+    const prod_data = await getAllProducts(); // Await the async function
+
+    console.log("Products:", prod_data);
+
+    const mappedProducts = prod_data.map((item: any) => ({
+      id: item.product_id,
+      name: item.product_name,
+      category: item.category,
+      brandName: item.brand_name,
+      price: item.price,
+      stock: item.quantity,
+      imagePath: "",
+    }));
+
+    setProducts(mappedProducts);
+  };
+
   const getAllProducts = async () => {
     try {
       const response = await axiosClient.get("/get_products");
@@ -303,56 +357,82 @@ const MainPage: React.FC = () => {
       navigate("/login");
     }
     setSelectedCategory("All");
-    const fetchProducts = async () => {
-      const prod_data = await getAllProducts(); // Await the async function
 
-      console.log("Products:", prod_data);
-
-      const mappedProducts = prod_data.map((item: any) => ({
-        id: item.product_id,
-        name: item.product_name,
-        category: item.category,
-        brandName: item.brand_name,
-        price: item.price,
-        stock: item.quantity,
-        imagePath: "",
-      }));
-
-      setProducts(mappedProducts);
-    };
-
+    fetchOrders()
     fetchProducts();
+    waitForFreshchat()
   }, []);
 
   const ChatWidget = () => {
     useEffect(() => {
       if (document.getElementById("chat-widget-script")) return; // Prevent duplicate scripts
-  
+
       const script = document.createElement("script");
       script.src = "//in.fw-cdn.com/32305041/1244590.js";
       script.async = true;
       script.id = "chat-widget-script";
       script.setAttribute("chat", "true");
       script.setAttribute("widgetId", "2b9629aa-c14f-41af-bdb7-f2e8ef77a230");
-  
+
       document.body.appendChild(script);
-  
+
       script.onload = () => {
         console.log("Chat widget script loaded successfully.");
       };
-  
-      return () => {
-        document.body.removeChild(script);
-      };
     }, []);
-  
+
+
     return <div id="chat-widget-container"></div>;
+  };
+
+  const waitForFreshchat = async (timeout = 10000, interval = 500) => {
+    const startTime = Date.now();
+    while (!window.fcWidget) {
+      if (Date.now() - startTime > timeout) {
+        console.error("❌ Freshchat widget failed to load within timeout.");
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+    console.log("✅ Freshchat widget fully initialized.");
+    window.fcWidget.user.clear();
+    setUserProperty()
+  };
+
+  const setUserProperty = () => {
+    if ((window as any).fcWidget) {
+      (window as any).fcWidget.user.setProperties({
+        firstName: userId,
+      });
+
+      (window as any).fcWidget.user.get().then((userData: any) => {
+        console.log("User Data:", userData);
+      }).catch((error: any) => {
+        console.error("Error fetching user properties:", error);
+      });
+    } else {
+      console.error("Freshchat widget not loaded yet.");
+    }
+  };
+
+  const removeChatWidget = () => {
+    const script = document.getElementById("chat-widget-script");
+    if (script && script.parentNode) {
+      script.parentNode.removeChild(script);
+      window.fcWidget.user.clear();
+      console.log("Chat widget script removed.");
+    }
+
+    const chatFrames = document.querySelectorAll("iframe, .chat-widget, .chat-container");
+    chatFrames.forEach((element) => element.remove());
+
+    console.log("Chat widget elements removed.");
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Chat Widget */}
-      <ChatWidget />
+      {userId !== null && <ChatWidget />}
       {/* Header */}
       <header className="bg-gray-900 text-white p-4">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between">
@@ -376,6 +456,7 @@ const MainPage: React.FC = () => {
               className="text-white mx-2 hover:text-yellow-400"
               onClick={() => {
                 setUserId(null);
+                removeChatWidget()
                 navigate("/login");
               }}
             >
@@ -391,9 +472,8 @@ const MainPage: React.FC = () => {
           {categories.map((category) => (
             <button
               key={category.id}
-              className={`mr-6 hover:text-yellow-400 ${
-                selectedCategory === category.name ? "text-yellow-400" : ""
-              }`}
+              className={`mr-6 hover:text-yellow-400 ${selectedCategory === category.name ? "text-yellow-400" : ""
+                }`}
               onClick={() =>
                 setSelectedCategory(
                   category.name === selectedCategory ? "" : category.name
@@ -438,9 +518,8 @@ const MainPage: React.FC = () => {
                   ${product.price}
                 </p>
                 <p
-                  className={`text-sm ${
-                    product.stock > 0 ? "text-green-600" : "text-red-600"
-                  }`}
+                  className={`text-sm ${product.stock > 0 ? "text-green-600" : "text-red-600"
+                    }`}
                 >
                   {product.stock > 0
                     ? `In Stock: ${product.stock}`
@@ -518,10 +597,9 @@ const MainPage: React.FC = () => {
                   onClick={() => handleOrder(product)}
                   disabled={product.stock <= 0}
                   className={`w-full py-2 rounded-full font-bold text-center 
-                    ${
-                      product.stock > 0
-                        ? "bg-yellow-400 hover:bg-yellow-500"
-                        : "bg-gray-300 cursor-not-allowed"
+                    ${product.stock > 0
+                      ? "bg-yellow-400 hover:bg-yellow-500"
+                      : "bg-gray-300 cursor-not-allowed"
                     }
                   `}
                 >
@@ -543,7 +621,6 @@ const MainPage: React.FC = () => {
                   <tr className="bg-gray-100">
                     <th className="py-3 px-4 text-left">Order ID</th>
                     <th className="py-3 px-4 text-left">Product</th>
-                    <th className="py-3 px-4 text-left">Unit Price</th>
                     <th className="py-3 px-4 text-left">Quantity</th>
                     <th className="py-3 px-4 text-left">Total</th>
                     <th className="py-3 px-4 text-left">Date</th>
@@ -556,22 +633,20 @@ const MainPage: React.FC = () => {
                     <tr key={order.id} className="border-t">
                       <td className="py-3 px-4">{order.id}</td>
                       <td className="py-3 px-4">{order.productName}</td>
-                      <td className="py-3 px-4">${order.price}</td>
                       <td className="py-3 px-4">{order.quantity}</td>
                       <td className="py-3 px-4">${order.totalPrice}</td>
                       <td className="py-3 px-4">{order.date}</td>
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs 
-                          ${
-                            order.status === "pending"
+                          ${order.status === "pending"
                               ? "bg-blue-100 text-blue-800"
                               : order.status === "out for delivery"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : order.status === "delivered"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
+                                ? "bg-yellow-100 text-yellow-800"
+                                : order.status === "delivered"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                            }`}
                         >
                           {order.status}
                         </span>

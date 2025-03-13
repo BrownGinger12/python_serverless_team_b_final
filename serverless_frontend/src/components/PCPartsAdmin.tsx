@@ -32,14 +32,12 @@ const initialCategories: Category[] = [
 
 // Form values type
 type ProductFormValues = Omit<Product, 'id'>;
-type CategoryFormValues = {
-    name: string;
-};
+
 
 // Main component
 const PCPartsAdmin: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const categories =initialCategories;
     const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -89,7 +87,6 @@ const PCPartsAdmin: React.FC = () => {
             );
         }
 
-        if (categoryFilter === "")
 
         setFilteredProducts(results);
     }, [products, searchTerm, categoryFilter]);
@@ -106,7 +103,7 @@ const PCPartsAdmin: React.FC = () => {
         const { name, value } = e.target;
         setProductFormValues({
             ...productFormValues,
-            [name]: name === 'price' || name === 'stock' ? parseFloat(value) : value
+            [name]: name === 'price' || name === 'stock' ? (value ? parseFloat(value) : 0) : value
         });
     };
 
@@ -195,7 +192,7 @@ const PCPartsAdmin: React.FC = () => {
             category: product.category,
             brand_name: product.brandName,
             price: product.price,
-            quantity: product.stock
+            quantity: product.stock,
         }
 
         const response = await axiosClient.post("/post_product", prod_data, {
@@ -214,7 +211,6 @@ const PCPartsAdmin: React.FC = () => {
 
     const updateProduct = async (product: Product) => {
         const prod_data = {
-            product_id: product.id,
             product_name: product.name,
             category: product.category,
             brand_name: product.brandName,

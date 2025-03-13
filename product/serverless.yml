@@ -164,7 +164,7 @@ functions:
       - httpApi:
           path: /get_orders
           method: get
-  
+          
   generate_pc:
     handler: handlers.pc_build_handler.generate_pc_build
     events:

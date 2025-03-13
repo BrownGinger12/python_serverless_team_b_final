@@ -5,6 +5,7 @@ from helper.helper_func import DecimalEncoder, generate_code
 import os
 from models.order import Order
 from datetime import datetime
+import time
 
 #gateway initialization
 db_handler = DynamoDB(os.getenv("ORDERS_TABLE"))
@@ -31,7 +32,6 @@ def order_handler(event, context):
     
     return HANDLER[http_method]()
 
-
 def get_all_orders(event, context):
     try:
         response = db_handler.get_all_items()
@@ -57,13 +57,19 @@ def get_all_orders(event, context):
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
 
+def generate_order_id():
+    timestamp = int(time.time() * 1000)  # Get current time in milliseconds
+    return f"ord-{timestamp}"
 
 def post_order(event, context):
     try:
         body = json.loads(event["body"], parse_float=Decimal)
         
+        
+        total_amount = body["quantity"]*body.get("price", 0) 
+
         order = Order(
-            order_id=body["order_id"],
+            order_id=body.get("order_id") or generate_order_id(),
             product_id=body["product_id"],
             product_name=body["product_name"],
             user_id=body["user_id"],
@@ -71,7 +77,7 @@ def post_order(event, context):
             contact_number=body["contact_number"],
             quantity=body["quantity"],
             status="pending",
-            total_price=body["total_price"],
+            total_price=body.get("total_price", Decimal(total_amount)),
         )
         
         response = order.create()

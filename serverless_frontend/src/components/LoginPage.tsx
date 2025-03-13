@@ -192,6 +192,7 @@ const SignupForm: React.FC = () => {
             setEmail("")
             setPassword("")
             setConfirmPassword("")
+            console.log(userCredential)
         } catch (err: any) {
             alert("Error signing up.")
         }
