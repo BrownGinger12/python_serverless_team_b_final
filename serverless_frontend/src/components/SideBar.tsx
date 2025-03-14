@@ -11,8 +11,8 @@ const Sidebar: React.FC = () => {
 	};
 
 	return (
-		<div className="w-full h-full flex flex-row justify-end relative">
-			<div className="w-[20%] h-[800px] bg-white shadow-lg left-0 fixed top-0">
+		<div className="w-full h-[100vh] flex flex-row justify-end relative">
+			<div className="w-[20%] h-full bg-white shadow-lg left-0 fixed top-0">
 				{/* Logo section */}
 				<div className="px-4 py-6 flex items-center">
 					<div className="bg-blue-600 text-white p-2 rounded-md">

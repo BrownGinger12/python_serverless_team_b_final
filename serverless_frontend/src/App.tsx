@@ -12,9 +12,7 @@ function App() {
 				<Route
 					path="/admin"
 					element={
-						<div className="w-full h-[100vh] flex flex-row items-center justify-center">
-							<Sidebar />
-						</div>
+						<Sidebar />
 					}
 				/>
 				<Route path="/" element={<MainPage />} />
