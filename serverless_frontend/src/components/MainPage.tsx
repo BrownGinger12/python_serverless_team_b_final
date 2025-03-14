@@ -3,6 +3,7 @@ import axiosClient from "../client/AxiosClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getAuth, signOut } from "firebase/auth";
+import { getImageURL } from "../firebase/firebase";
 
 declare global {
   interface Window {
@@ -71,6 +72,8 @@ const MainPage: React.FC = () => {
 
   const [orderProduct, setOrderProduct] = useState<Order>();
   const [productSelected, setSelectedProduct] = useState<Product>();
+
+  const auth = getAuth();
 
   // Initialize quantities for all products
   useEffect(() => {
@@ -321,15 +324,17 @@ const MainPage: React.FC = () => {
 
     console.log("Products:", prod_data);
 
-    const mappedProducts = prod_data.map((item: any) => ({
-      id: item.product_id,
-      name: item.product_name,
-      category: item.category,
-      brandName: item.brand_name,
-      price: item.price,
-      stock: item.quantity,
-      imagePath: "",
-    }));
+    const mappedProducts = await Promise.all(
+      prod_data.map(async (item: any) => ({
+        id: item.product_id,
+        name: item.product_name,
+        category: item.category,
+        brandName: item.brand_name,
+        price: item.price,
+        stock: item.quantity,
+        imagePath: await getImageURL(item.product_id)
+      }))
+    );
 
     setProducts(mappedProducts);
   };
@@ -362,7 +367,8 @@ const MainPage: React.FC = () => {
       navigate("/login");
     }
     setSelectedCategory("All");
-
+    
+    console.log("userID: " + userId)
     fetchOrders()
     fetchProducts();
     waitForFreshchat()
@@ -422,7 +428,6 @@ const MainPage: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    const auth = getAuth();
     try {
       await signOut(auth);
       console.log("User signed out");
@@ -473,8 +478,8 @@ const MainPage: React.FC = () => {
               onClick={() => {
                 setUserId(null);
                 removeChatWidget()
-                navigate("/login");
                 handleLogout()
+                navigate("/login");
               }}
             >
               Log out

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axiosClient from '../client/AxiosClient';
+import { getImageURL, uploadImage } from '../firebase/firebase';
 
 // Define types
 type Product = {
@@ -52,6 +53,7 @@ const PCPartsAdmin: React.FC = () => {
         imageUrl: '/api/placeholder/80/80'
     });
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [image, setImage] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Reset product form when modal closes
@@ -67,6 +69,7 @@ const PCPartsAdmin: React.FC = () => {
                 imageUrl: '/api/placeholder/80/80'
             });
             setImagePreview(null);
+            setImage(null)
         }
     }, [isProductModalOpen]);
 
@@ -123,6 +126,8 @@ const PCPartsAdmin: React.FC = () => {
             alert('Image file size should be less than 5MB');
             return;
         }
+
+        setImage(file)
 
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -203,7 +208,11 @@ const PCPartsAdmin: React.FC = () => {
         })
 
         if (response.data.body.statusCode === 200) {
+            if (image) {
+                uploadImage(image, product.id)
+            }
             alert("Product Added")
+            
         }
 
         console.log(response)
@@ -230,6 +239,9 @@ const PCPartsAdmin: React.FC = () => {
         })
 
         if (response.data.body.statusCode === 200) {
+            if (image) {
+                uploadImage(image, product.id)
+            }
             alert("Product updated")
         }
 
@@ -294,15 +306,18 @@ const PCPartsAdmin: React.FC = () => {
 
             console.log("Products:", prod_data);
 
-            const mappedProducts = prod_data.map((item: any) => ({
-                id: item.product_id,
-                name: item.product_name,
-                category: item.category,
-                brandName: item.brand_name,
-                price: item.price,
-                stock: item.quantity,
-                imageUrl: ""
-            }));
+            const mappedProducts = await Promise.all(
+                prod_data.map(async (item: any) => ({
+                    id: item.product_id,
+                    name: item.product_name,
+                    category: item.category,
+                    brandName: item.brand_name,
+                    price: item.price,
+                    stock: item.quantity,
+                    imageUrl: await getImageURL(item.product_id)
+                }))
+            );
+            
 
 
             setProducts(mappedProducts);
@@ -413,7 +428,7 @@ const PCPartsAdmin: React.FC = () => {
                                                 <div className="flex-shrink-0 h-10 w-10">
                                                     <img
                                                         className="h-10 w-10 rounded-md object-cover"
-                                                        src={product.imageUrl.startsWith('data:') ? product.imageUrl : '/api/placeholder/80/80'}
+                                                        src={product.imageUrl}
                                                         alt={product.name}
                                                     />
                                                 </div>
