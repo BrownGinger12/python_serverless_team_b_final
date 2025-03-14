@@ -458,7 +458,7 @@ const MainPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full px-4 py-2 rounded-l focus:outline-none"
+              className="w-full px-4 py-2 rounded-l focus:outline-none text-black"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
