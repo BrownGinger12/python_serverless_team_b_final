@@ -4,14 +4,13 @@ import {
 	Truck,
 	Clock,
 	Search,
-	Filter,
-	ChevronDown,
 	Trash2,
 	AlertTriangle,
 	X,
 } from "lucide-react";
 import axiosClient from "../client/AxiosClient";
 import axios from "axios";
+import OrderStatusDropdown from "./OrderStatusDropdown";
 
 // Define TypeScript interfaces
 interface Order {
@@ -364,30 +363,7 @@ const OrdersDashboard = () => {
 					</div>
 
 					<div className="relative">
-						<div
-							className="flex items-center space-x-1 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer"
-							onClick={() => {}}
-						>
-							<Filter size={16} className="text-gray-500" />
-							<span className="text-sm text-gray-700">
-								Status:{" "}
-							</span>
-							<select
-								className="appearance-none bg-transparent border-none focus:outline-none text-sm font-medium"
-								value={statusFilter}
-								onChange={(e) =>
-									setStatusFilter(e.target.value)
-								}
-							>
-								<option value="all">All</option>
-								<option value="pending">Pending</option>
-								<option value="out for delivery">
-									Out for delivery
-								</option>
-								<option value="delivered">Delivered</option>
-							</select>
-							<ChevronDown size={16} className="text-gray-500" />
-						</div>
+						<OrderStatusDropdown setNewStatus={setStatusFilter} />
 					</div>
 				</div>
 			</div>
