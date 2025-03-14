@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axiosClient from "../client/AxiosClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase/firebase";
 
 declare global {
   interface Window {
@@ -352,7 +354,11 @@ const MainPage: React.FC = () => {
 
   const navigate = useNavigate();
 
+
+
   useEffect(() => {
+
+
     if (userId === null) {
       navigate("/login");
     }
@@ -361,6 +367,7 @@ const MainPage: React.FC = () => {
     fetchOrders()
     fetchProducts();
     waitForFreshchat()
+
   }, []);
 
   const ChatWidget = () => {

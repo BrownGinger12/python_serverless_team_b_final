@@ -209,14 +209,18 @@ const PCPartsAdmin: React.FC = () => {
         console.log(response)
     }
 
-    const updateProduct = async (product: Product) => {
+    const updateProduct = async (product: any) => {
+
+        
         const prod_data = {
             product_name: product.name,
             category: product.category,
             brand_name: product.brandName,
-            price: product.price,
-            quantity: product.stock
+            price: parseFloat(product.price),
+            quantity: parseFloat(product.stock)
         }
+
+        console.log(prod_data)
 
         const response = await axiosClient.put(`/product/${product.id}`, prod_data, {
             headers: {
@@ -243,7 +247,7 @@ const PCPartsAdmin: React.FC = () => {
                 products.map(product =>
                     product.id === currentProduct.id
                         ? { ...product, ...productFormValues }
-                        : product
+                        : product,
                 )
             );
 

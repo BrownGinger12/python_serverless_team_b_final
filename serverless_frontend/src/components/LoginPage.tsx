@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
 
 // Main App Component
 const LoginPage: React.FC = () => {
-    const { userId } = useAuth();
+    const { userId,setUserId } = useAuth();
 
     const navigate = useNavigate()
 
     useEffect(() => {
+        const auth_state = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid)
+            }
+        });
+
         if (userId !== null) {
             navigate("/")
         }
+
+        return auth_state
     }, [])
+
 
     return (
         <div className="min-h-[100vh] bg-gray-100">
@@ -102,6 +111,8 @@ const LoginForm: React.FC = () => {
     const { setUserId } = useAuth();
 
     const navigate = useNavigate()
+
+    
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
