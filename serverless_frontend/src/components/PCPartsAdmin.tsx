@@ -374,14 +374,14 @@ const PCPartsAdmin: React.FC = () => {
                 </div>
 
                 {/* Products List */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-white rounded-lg shadow overflow-hidden h-[70vh]">
                     <div className="p-4 border-b border-gray-200">
                         <h2 className="text-lg font-medium text-gray-800">Products</h2>
                         <p className="text-sm text-gray-500 mt-1">
                             Showing {filteredProducts.length} of {products.length} products
                         </p>
                     </div>
-                    <div className="overflow-x-auto h-[450px] ">
+                    <div className="overflow-x-auto h-[83%] overflow-y-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
