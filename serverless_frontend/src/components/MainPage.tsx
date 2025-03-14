@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import axiosClient from "../client/AxiosClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase/firebase";
+import { getAuth, signOut } from "firebase/auth";
 
 declare global {
   interface Window {
@@ -422,6 +421,16 @@ const MainPage: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+      console.log("User signed out");
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
+
   const removeChatWidget = () => {
     const script = document.getElementById("chat-widget-script");
     if (script && script.parentNode) {
@@ -465,6 +474,7 @@ const MainPage: React.FC = () => {
                 setUserId(null);
                 removeChatWidget()
                 navigate("/login");
+                handleLogout()
               }}
             >
               Log out

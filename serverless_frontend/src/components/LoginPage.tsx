@@ -6,7 +6,7 @@ import { auth } from '../firebase/firebase';
 
 // Main App Component
 const LoginPage: React.FC = () => {
-    const { userId,setUserId } = useAuth();
+    const { setUserId } = useAuth();
 
     const navigate = useNavigate()
 
@@ -14,12 +14,9 @@ const LoginPage: React.FC = () => {
         const auth_state = onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUserId(user.uid)
+                navigate("/")
             }
         });
-
-        if (userId !== null) {
-            navigate("/")
-        }
 
         return auth_state
     }, [])

@@ -105,6 +105,8 @@ const PCPartsAdmin: React.FC = () => {
             ...productFormValues,
             [name]: name === 'price' || name === 'stock' ? (value ? parseFloat(value) : 0) : value
         });
+
+        console.log(productFormValues)
     };
 
     // Handle image upload
@@ -209,20 +211,20 @@ const PCPartsAdmin: React.FC = () => {
         console.log(response)
     }
 
-    const updateProduct = async (product: any) => {
+    const updateProduct = async (product: any, product_id: string) => {
 
         
         const prod_data = {
             product_name: product.name,
             category: product.category,
             brand_name: product.brandName,
-            price: parseFloat(product.price),
-            quantity: parseFloat(product.stock)
+            price: product.price,
+            quantity: product.stock
         }
 
         console.log(prod_data)
 
-        const response = await axiosClient.put(`/product/${product.id}`, prod_data, {
+        const response = await axiosClient.put(`/product/${product_id}`, prod_data, {
             headers: {
                 "Content-Type": "application/json",
             },
@@ -251,7 +253,7 @@ const PCPartsAdmin: React.FC = () => {
                 )
             );
 
-            updateProduct(currentProduct)
+            updateProduct(productFormValues, currentProduct.id)
         } else {
             // Add new product
             const newProduct: Product = {
