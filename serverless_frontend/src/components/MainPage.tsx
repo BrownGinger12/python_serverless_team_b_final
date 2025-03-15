@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axiosClient from "../client/AxiosClient";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getAuth, signOut } from "firebase/auth";
+import { calculateFinalPrice } from "../utils/calculation";
+import ProductCard from "./ProductCard";
+import Loading from "./Loading";
+import { getImageURL } from "../firebase/firebase";
 
 declare global {
   interface Window {
@@ -11,7 +15,7 @@ declare global {
 }
 
 // Define types
-interface Product {
+export interface Product {
   id: string;
   name: string;
   brandName: string;
@@ -52,6 +56,9 @@ const MainPage: React.FC = () => {
     { id: "9", name: "Cooling" },
     { id: "10", name: "Peripherals" },
   ];
+
+  // Auth context
+  const { userId, setUserId, isLoading } = useAuth();
 
   // Sample product data
   const [products, setProducts] = useState<Product[]>([]);
@@ -118,18 +125,6 @@ const MainPage: React.FC = () => {
     }
   };
 
-  // Calculate price for a product based on quantity
-  const calculatePrice = (product: Product, quantity: number): number => {
-    return product.price * quantity;
-  };
-
-  // Calculate final price including any discounts
-  const calculateFinalPrice = (product: Product, quantity: number): number => {
-    const basePrice = calculatePrice(product, quantity);
-
-    return basePrice;
-  };
-
   const updateOrder = async (order_id: string, new_status: string) => {
     const response = await axiosClient.put(
       `/order/${order_id}`,
@@ -161,6 +156,12 @@ const MainPage: React.FC = () => {
   };
 
   const addOrder = async (order: Order, product: Product) => {
+    if (!userId) {
+      alert("Please sign in to place an order");
+      navigate("/login");
+      return;
+    }
+
     const new_order = {
       order_id: order.id,
       product_name: order.productName,
@@ -208,6 +209,12 @@ const MainPage: React.FC = () => {
 
   // Order a product
   const handleOrder = (product: Product) => {
+    if (!userId) {
+      alert("Please sign in to place an order");
+      navigate("/login");
+      return;
+    }
+
     const quantity = quantities[product.id] || 1;
 
     if (product.stock >= quantity && quantity > 0) {
@@ -251,6 +258,12 @@ const MainPage: React.FC = () => {
 
   // Cancel an order
   const handleCancelOrder = (orderId: string) => {
+    if (!userId) {
+      alert("Please sign in to place an order");
+      navigate("/login");
+      return;
+    }
+
     // Find the order
     const orderToCancel = orders.find((order) => order.id === orderId);
 
@@ -296,22 +309,22 @@ const MainPage: React.FC = () => {
     const mappedOrders = order_data.map((item: any) => ({
       id: item.order_id,
       productId: item.product_id,
-      productName: item.proudct_name,
+      productName: item.product_name,
       quantity: item.quantity,
       totalPrice: item.total_price,
       date: item.datetime,
       user_id: item.user_id,
-      status: item.order_status
+      status: item.order_status,
     }));
 
-    let query = mappedOrders
+    let query = mappedOrders;
 
     if (userId !== null) {
-      query = query.filter((order: { user_id: string }) =>
-        String(order.user_id).toLowerCase() === String(userId).toLowerCase()
+      query = query.filter(
+        (order: { user_id: string }) =>
+          String(order.user_id).toLowerCase() === String(userId).toLowerCase()
       );
     }
-
 
     setOrders(query);
   };
@@ -321,15 +334,17 @@ const MainPage: React.FC = () => {
 
     console.log("Products:", prod_data);
 
-    const mappedProducts = prod_data.map((item: any) => ({
-      id: item.product_id,
-      name: item.product_name,
-      category: item.category,
-      brandName: item.brand_name,
-      price: item.price,
-      stock: item.quantity,
-      imagePath: "",
-    }));
+    const mappedProducts = await Promise.all(
+      prod_data.map(async (item: any) => ({
+        id: item.product_id,
+        name: item.product_name,
+        category: item.category,
+        brandName: item.brand_name,
+        price: item.price,
+        stock: item.quantity,
+        imagePath: await getImageURL(item.product_id),
+      }))
+    );
 
     setProducts(mappedProducts);
   };
@@ -347,26 +362,17 @@ const MainPage: React.FC = () => {
     }
   };
 
-  const { userId, setUserId } = useAuth();
   const [contactNumber, setContactNumber] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
   const navigate = useNavigate();
 
-
-
   useEffect(() => {
-
-
-    if (userId === null) {
-      navigate("/login");
-    }
     setSelectedCategory("All");
 
-    fetchOrders()
+    fetchOrders();
     fetchProducts();
-    waitForFreshchat()
-
+    waitForFreshchat();
   }, []);
 
   const ChatWidget = () => {
@@ -387,7 +393,6 @@ const MainPage: React.FC = () => {
       };
     }, []);
 
-
     return <div id="chat-widget-container"></div>;
   };
 
@@ -402,7 +407,7 @@ const MainPage: React.FC = () => {
     }
     console.log("✅ Freshchat widget fully initialized.");
     window.fcWidget.user.clear();
-    setUserProperty()
+    setUserProperty();
   };
 
   const setUserProperty = () => {
@@ -411,11 +416,14 @@ const MainPage: React.FC = () => {
         firstName: userId,
       });
 
-      (window as any).fcWidget.user.get().then((userData: any) => {
-        console.log("User Data:", userData);
-      }).catch((error: any) => {
-        console.error("Error fetching user properties:", error);
-      });
+      (window as any).fcWidget.user
+        .get()
+        .then((userData: any) => {
+          console.log("User Data:", userData);
+        })
+        .catch((error: any) => {
+          console.error("Error fetching user properties:", error);
+        });
     } else {
       console.error("Freshchat widget not loaded yet.");
     }
@@ -439,14 +447,21 @@ const MainPage: React.FC = () => {
       console.log("Chat widget script removed.");
     }
 
-    const chatFrames = document.querySelectorAll("iframe, .chat-widget, .chat-container");
+    const chatFrames = document.querySelectorAll(
+      "iframe, .chat-widget, .chat-container"
+    );
     chatFrames.forEach((element) => element.remove());
 
     console.log("Chat widget elements removed.");
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-100 relative">
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <Loading />
+        </div>
+      )}
       {/* Chat Widget */}
       {userId !== null && <ChatWidget />}
       {/* Header */}
@@ -468,17 +483,27 @@ const MainPage: React.FC = () => {
           </div>
 
           <div className="flex">
-            <button
-              className="text-white mx-2 hover:text-yellow-400"
-              onClick={() => {
-                setUserId(null);
-                removeChatWidget()
-                navigate("/login");
-                handleLogout()
-              }}
-            >
-              Log out
-            </button>
+            {!isLoading &&
+              (userId !== null ? (
+                <button
+                  className="text-white mx-2 hover:text-yellow-400"
+                  onClick={() => {
+                    setUserId(null);
+                    removeChatWidget();
+                    navigate("/login");
+                    handleLogout();
+                  }}
+                >
+                  Log out
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-white mx-2 hover:text-yellow-400 underline"
+                >
+                  Sign-in
+                </Link>
+              ))}
           </div>
         </div>
       </header>
@@ -489,8 +514,9 @@ const MainPage: React.FC = () => {
           {categories.map((category) => (
             <button
               key={category.id}
-              className={`mr-6 hover:text-yellow-400 ${selectedCategory === category.name ? "text-yellow-400" : ""
-                }`}
+              className={`mr-6 hover:text-yellow-400 ${
+                selectedCategory === category.name ? "text-yellow-400" : ""
+              }`}
               onClick={() =>
                 setSelectedCategory(
                   category.name === selectedCategory ? "" : category.name
@@ -514,185 +540,86 @@ const MainPage: React.FC = () => {
         {/* Products grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col"
-            >
-              <div className="h-48 flex items-center justify-center p-4">
-                <img
-                  src={product.imagePath}
-                  alt={product.name}
-                  className="max-h-40 max-w-full object-contain"
-                />
-              </div>
-
-              <div className="p-4 flex-grow">
-                <h3 className="font-semibold text-gray-800 text-lg mb-2 h-12 overflow-hidden">
-                  {product.name}
-                </h3>
-                <p className="text-gray-600 text-sm">{product.brandName}</p>
-                <p className="text-red-700 font-bold text-xl my-2">
-                  ${product.price}
-                </p>
-                <p
-                  className={`text-sm ${product.stock > 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                >
-                  {product.stock > 0
-                    ? `In Stock: ${product.stock}`
-                    : "Out of Stock"}
-                </p>
-
-                {/* Quantity selector */}
-                <div className="flex items-center mt-2">
-                  <span className="text-sm text-gray-700 mr-2">Qty:</span>
-                  <div className="flex border rounded">
-                    <button
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200"
-                      onClick={() =>
-                        handleQuantityChange(
-                          product.id,
-                          (quantities[product.id] || 1) - 1
-                        )
-                      }
-                      disabled={product.stock <= 0}
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max={product.stock}
-                      value={quantities[product.id] || 1}
-                      onChange={(e) =>
-                        handleQuantityChange(
-                          product.id,
-                          parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="w-12 text-center"
-                      disabled={product.stock <= 0}
-                    />
-                    <button
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200"
-                      onClick={() =>
-                        handleQuantityChange(
-                          product.id,
-                          (quantities[product.id] || 1) + 1
-                        )
-                      }
-                      disabled={
-                        product.stock <= 0 ||
-                        (quantities[product.id] || 1) >= product.stock
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Price calculation */}
-                {product.stock > 0 && quantities[product.id] > 1 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-700">
-                      Subtotal: $
-                      {calculatePrice(product, quantities[product.id] || 1)}
-                    </p>
-                    <p className="text-sm font-semibold">
-                      Final Price: $
-                      {calculateFinalPrice(
-                        product,
-                        quantities[product.id] || 1
-                      )}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 pt-0">
-                <button
-                  onClick={() => handleOrder(product)}
-                  disabled={product.stock <= 0}
-                  className={`w-full py-2 rounded-full font-bold text-center 
-                    ${product.stock > 0
-                      ? "bg-yellow-400 hover:bg-yellow-500"
-                      : "bg-gray-300 cursor-not-allowed"
-                    }
-                  `}
-                >
-                  {product.stock > 0 ? "Order Now" : "Out of Stock"}
-                </button>
-              </div>
-            </div>
+            <ProductCard
+              product={product}
+              quantities={quantities}
+              handleQuantityChange={handleQuantityChange}
+              handleOrder={handleOrder}
+            />
           ))}
         </div>
 
         {/* Orders section */}
-        <section id="orders" className="mt-12">
-          <h2 className="text-2xl font-bold mb-6">Your Orders</h2>
+        {userId !== null && (
+          <section id="orders" className="mt-12">
+            <h2 className="text-2xl font-bold mb-6">Your Orders</h2>
 
-          {orders.length > 0 ? (
-            <div className="overflow-x-auto bg-white rounded-lg shadow">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="py-3 px-4 text-left">Order ID</th>
-                    <th className="py-3 px-4 text-left">Product</th>
-                    <th className="py-3 px-4 text-left">Quantity</th>
-                    <th className="py-3 px-4 text-left">Total</th>
-                    <th className="py-3 px-4 text-left">Date</th>
-                    <th className="py-3 px-4 text-left">Status</th>
-                    <th className="py-3 px-4 text-left">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="border-t">
-                      <td className="py-3 px-4">{order.id}</td>
-                      <td className="py-3 px-4">{order.productName}</td>
-                      <td className="py-3 px-4">{order.quantity}</td>
-                      <td className="py-3 px-4">${order.totalPrice}</td>
-                      <td className="py-3 px-4">{order.date}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs 
-                          ${order.status === "pending"
-                              ? "bg-blue-100 text-blue-800"
-                              : order.status === "out for delivery"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : order.status === "delivered"
+            {orders.length > 0 ? (
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="py-3 px-4 text-left">Order ID</th>
+                      <th className="py-3 px-4 text-left">Product</th>
+                      <th className="py-3 px-4 text-left">Quantity</th>
+                      <th className="py-3 px-4 text-left">Total</th>
+                      <th className="py-3 px-4 text-left">Date</th>
+                      <th className="py-3 px-4 text-left">Status</th>
+                      <th className="py-3 px-4 text-left">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id} className="border-t">
+                        <td className="py-3 px-4">{order.id}</td>
+                        <td className="py-3 px-4">{order.productName}</td>
+                        <td className="py-3 px-4">{order.quantity}</td>
+                        <td className="py-3 px-4">${order.totalPrice}</td>
+                        <td className="py-3 px-4">{order.date}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs 
+                              ${
+                                order.status === "pending"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : order.status === "out for delivery"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : order.status === "delivered"
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
-                            }`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {order.status === "pending" ? (
-                          <button
-                            onClick={() => handleCancelOrder(order.id)}
-                            className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                              }`}
                           >
-                            Cancel Order
-                          </button>
-                        ) : (
-                          <span className="text-sm text-gray-500">
-                            {order.status === "cancelled"
-                              ? "cancelled"
-                              : "Cannot cancel"}
+                            {order.status}
                           </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-gray-600">You haven't placed any orders yet.</p>
-          )}
-        </section>
+                        </td>
+                        <td className="py-3 px-4">
+                          {order.status === "pending" ? (
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                            >
+                              Cancel Order
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-500">
+                              {order.status === "cancelled"
+                                ? "cancelled"
+                                : "Cannot cancel"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-600">
+                You haven't placed any orders yet.
+              </p>
+            )}
+          </section>
+        )}
       </main>
 
       {/* Contact number modal*/}
