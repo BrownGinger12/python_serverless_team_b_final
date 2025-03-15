@@ -6,6 +6,7 @@ import { getAuth, signOut } from "firebase/auth";
 import { calculateFinalPrice } from "../utils/calculation";
 import ProductCard from "./ProductCard";
 import Loading from "./Loading";
+import { getImageURL } from "../firebase/firebase";
 
 declare global {
 	interface Window {
@@ -342,16 +343,17 @@ const MainPage: React.FC = () => {
 
 		console.log("Products:", prod_data);
 
-		const mappedProducts = prod_data.map((item: any) => ({
-			id: item.product_id,
-			name: item.product_name,
-			category: item.category,
-			brandName: item.brand_name,
-			price: item.price,
-			stock: item.quantity,
-			imagePath: "",
-		}));
-
+		const mappedProducts = await Promise.all(
+			prod_data.map(async (item: any) => ({
+			  id: item.product_id,
+			  name: item.product_name,
+			  category: item.category,
+			  brandName: item.brand_name,
+			  price: item.price,
+			  stock: item.quantity,
+			  imagePath: await getImageURL(item.product_id)
+			}))
+		  );
 		setProducts(mappedProducts);
 	};
 
