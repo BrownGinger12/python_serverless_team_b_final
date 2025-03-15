@@ -1,10 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Package, ShoppingCart } from "lucide-react";
 import PCPartsAdmin from "./PCPartsAdmin";
 import OrdersDashboard from "./OrdersDashboard";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const Sidebar: React.FC = () => {
+const Admin: React.FC = () => {
+	const { userId, isLoading } = useAuth();
+	const navigate = useNavigate();
 	const [activeItem, setActiveItem] = useState("products");
+
+	useEffect(() => {
+		if (!userId && !isLoading) {
+			alert(
+				"Cannot access admin without permission. Redirecting to login page."
+			);
+			navigate("/login");
+			return;
+		}
+	}, [userId, isLoading]);
 
 	const handleItemClick = (item: string) => {
 		setActiveItem(item);
@@ -61,4 +75,4 @@ const Sidebar: React.FC = () => {
 	);
 };
 
-export default Sidebar;
+export default Admin;
