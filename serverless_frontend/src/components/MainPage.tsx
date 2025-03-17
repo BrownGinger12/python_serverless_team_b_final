@@ -55,6 +55,7 @@ const MainPage: React.FC = () => {
 		{ id: "8", name: "Case" },
 		{ id: "9", name: "Cooling" },
 		{ id: "10", name: "Peripherals" },
+		{ id: "11", name: "Monitors" },
 	];
 
 	// Auth context
@@ -204,7 +205,6 @@ const MainPage: React.FC = () => {
 			});
 
 			setProducts(updatedProducts);
-			addStocks(product.id, -quantity);
 
 			setQuantities({
 				...quantities,
@@ -293,7 +293,6 @@ const MainPage: React.FC = () => {
 			});
 
 			updateOrder(orderId, "cancelled");
-			addStocks(orderToCancel.productId, orderToCancel.quantity);
 			setOrders(updatedOrders);
 			setProducts(updatedProducts);
 
@@ -345,15 +344,15 @@ const MainPage: React.FC = () => {
 
 		const mappedProducts = await Promise.all(
 			prod_data.map(async (item: any) => ({
-			  id: item.product_id,
-			  name: item.product_name,
-			  category: item.category,
-			  brandName: item.brand_name,
-			  price: item.price,
-			  stock: item.quantity,
-			  imagePath: await getImageURL(item.product_id)
+				id: item.product_id,
+				name: item.product_name,
+				category: item.category,
+				brandName: item.brand_name,
+				price: item.price,
+				stock: item.quantity,
+				imagePath: await getImageURL(item.product_id),
 			}))
-		  );
+		);
 		setProducts(mappedProducts);
 	};
 

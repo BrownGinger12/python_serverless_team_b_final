@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Package, ShoppingCart } from "lucide-react";
+import { Package, ShoppingCart, Tickets } from "lucide-react";
 import PCPartsAdmin from "./PCPartsAdmin";
 import OrdersDashboard from "./OrdersDashboard";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import AdminTicketsPanel from "./AdminTicketsPanel";
 
 const Admin: React.FC = () => {
 	const { userId, isLoading } = useAuth();
@@ -64,12 +65,25 @@ const Admin: React.FC = () => {
 						<ShoppingCart size={18} className="mr-3" />
 						<span>Orders</span>
 					</div>
+					{/* Tickets */}
+					<div
+						className={`flex items-center py-3 px-4 cursor-pointer rounded-md transition-colors ${
+							activeItem === "tickets"
+								? "bg-blue-100 text-blue-700"
+								: "hover:bg-gray-100"
+						}`}
+						onClick={() => handleItemClick("tickets")}
+					>
+						<Tickets size={18} className="mr-3" />
+						<span>Tickets</span>
+					</div>
 				</div>
 			</div>
 
 			<div className="w-[80%] h-full">
 				{activeItem === "products" && <PCPartsAdmin />}
 				{activeItem === "orders" && <OrdersDashboard />}
+				{activeItem === "tickets" && <AdminTicketsPanel />}
 			</div>
 		</div>
 	);
