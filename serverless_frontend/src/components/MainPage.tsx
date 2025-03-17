@@ -192,7 +192,7 @@ const MainPage: React.FC = () => {
 			alert("Order added.");
 
 			if (orderProduct) {
-				setOrders([...orders, orderProduct]);
+				setOrders([orderProduct, ...orders]);
 			}
 
 			const quantity = quantities[product.id] || 1;
@@ -334,6 +334,10 @@ const MainPage: React.FC = () => {
 			);
 		}
 
+		query = query.sort((a: { date: string }, b: { date: string }) => {
+			return new Date(b.date).getTime() - new Date(a.date).getTime();
+		});
+
 		setOrders(query);
 	};
 
@@ -469,11 +473,6 @@ const MainPage: React.FC = () => {
 
 	return (
 		<div className="min-h-screen flex flex-col bg-gray-100 relative">
-			{isLoading && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-					<Loading />
-				</div>
-			)}
 			{/* Chat Widget */}
 			{userId !== null && <ChatWidget />}
 			{/* Header */}
@@ -557,14 +556,41 @@ const MainPage: React.FC = () => {
 
 				{/* Products grid */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-					{filteredProducts.map((product) => (
-						<ProductCard
-							product={product}
-							quantities={quantities}
-							handleQuantityChange={handleQuantityChange}
-							handleOrder={handleOrder}
-						/>
-					))}
+					{filteredProducts.length > 0
+						? filteredProducts.map((product) => (
+								<ProductCard
+									key={product.id}
+									product={product}
+									quantities={quantities}
+									handleQuantityChange={handleQuantityChange}
+									handleOrder={handleOrder}
+								/>
+						  ))
+						: Array(8)
+								.fill(0)
+								.map((_, index) => (
+									<div
+										key={`skeleton-${index}`}
+										className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col animate-pulse"
+									>
+										<div className="h-48 bg-gray-200"></div>
+										<div className="p-4 flex-grow">
+											<div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
+											<div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+											<div className="h-6 bg-gray-200 rounded w-1/4 my-2"></div>
+											<div className="h-4 bg-gray-200 rounded w-2/5 mb-4"></div>
+
+											{/* Quantity selector placeholder */}
+											<div className="flex items-center mt-2">
+												<div className="w-12 h-8 bg-gray-200 rounded mr-2"></div>
+												<div className="flex border rounded h-8 w-24 bg-gray-200"></div>
+											</div>
+										</div>
+										<div className="p-4 pt-0">
+											<div className="h-10 bg-gray-200 rounded-full w-full"></div>
+										</div>
+									</div>
+								))}
 				</div>
 
 				{/* Orders section */}
