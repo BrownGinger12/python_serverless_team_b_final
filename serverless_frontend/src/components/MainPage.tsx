@@ -205,7 +205,6 @@ const MainPage: React.FC = () => {
 			});
 
 			setProducts(updatedProducts);
-			addStocks(product.id, -quantity);
 
 			setQuantities({
 				...quantities,
@@ -294,7 +293,6 @@ const MainPage: React.FC = () => {
 			});
 
 			updateOrder(orderId, "cancelled");
-			addStocks(orderToCancel.productId, orderToCancel.quantity);
 			setOrders(updatedOrders);
 			setProducts(updatedProducts);
 
