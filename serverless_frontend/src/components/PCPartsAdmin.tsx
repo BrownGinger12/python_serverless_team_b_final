@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axiosClient from "../client/AxiosClient";
-import { getImageURL, uploadImage } from '../firebase/firebase';
+import { getImageURL, uploadImage } from "../firebase/firebase";
 
 // Define types
 type Product = {
@@ -28,6 +28,7 @@ const initialCategories: Category[] = [
 	{ id: "7", name: "Case" },
 	{ id: "8", name: "Cooling" },
 	{ id: "9", name: "Peripherals" },
+	{ id: "10", name: "Monitors" },
 ];
 
 // Form values type
@@ -69,7 +70,7 @@ const PCPartsAdmin: React.FC = () => {
 				imageUrl: "/no-image.png",
 			});
 			setImagePreview(null);
-			setImage(null)
+			setImage(null);
 		}
 	}, [isProductModalOpen]);
 
@@ -132,7 +133,7 @@ const PCPartsAdmin: React.FC = () => {
 			return;
 		}
 
-		setImage(file)
+		setImage(file);
 
 		const reader = new FileReader();
 		reader.onload = (event) => {
@@ -211,8 +212,8 @@ const PCPartsAdmin: React.FC = () => {
 
 		if (response.data.body.statusCode === 200) {
 			if (image) {
-                uploadImage(image, product.id)
-            }
+				uploadImage(image, product.id);
+			}
 			alert("Product Added");
 		}
 
@@ -243,8 +244,8 @@ const PCPartsAdmin: React.FC = () => {
 
 		if (response.data.body.statusCode === 200) {
 			if (image) {
-                uploadImage(image, product.id)
-            }
+				uploadImage(image, product.id);
+			}
 			alert("Product updated");
 		}
 
@@ -305,16 +306,16 @@ const PCPartsAdmin: React.FC = () => {
 			console.log("Products:", prod_data);
 
 			const mappedProducts = await Promise.all(
-                prod_data.map(async (item: any) => ({
-                    id: item.product_id,
-                    name: item.product_name,
-                    category: item.category,
-                    brandName: item.brand_name,
-                    price: item.price,
-                    stock: item.quantity,
-                    imageUrl: await getImageURL(item.product_id)
-                }))
-            );
+				prod_data.map(async (item: any) => ({
+					id: item.product_id,
+					name: item.product_name,
+					category: item.category,
+					brandName: item.brand_name,
+					price: item.price,
+					stock: item.quantity,
+					imageUrl: await getImageURL(item.product_id),
+				}))
+			);
 
 			setProducts(mappedProducts);
 		};
@@ -509,7 +510,7 @@ const PCPartsAdmin: React.FC = () => {
 											{product.brandName}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
-											<span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+											<span className="px-2 text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
 												{product.category}
 											</span>
 										</td>
