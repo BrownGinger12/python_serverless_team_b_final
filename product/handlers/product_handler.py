@@ -8,6 +8,7 @@ from gateways.s3_gateway import S3Gateway
 from gateways.logs_gateway import CloudWatchLogger
 from helper.helper_func import DecimalEncoder, generate_code
 import os
+import re
 
 #gateway initialization
 db_handler = DynamoDB(os.getenv("DB_NAME"))
@@ -237,3 +238,38 @@ def receive_message_from_sqs(event, context):
         
     print("All done!")
     return {}
+
+def search_by_name(event, context):
+    response = db_handler.get_all_items()
+    product_name = event.get("pathParameters", {}).get("name", "none")
+    filtered_data = {"data": []}
+
+    datas = response["data"]
+
+    for data in datas:
+        match_name = re.search(product_name.lower(), data.get("product_name").lower())
+        if match_name:
+            filtered_data["data"].append(data)
+
+    if response["statusCode"] != 200:
+            return response
+    
+    if filtered_data["data"]:
+        return {
+            "body": {"statusCode": 404, "message": "item does not exist"},
+            "headers": {
+                "Access-Control-Allow-Origin": "*",  # Allow all origins
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+            }
+        }
+        
+    return {
+        "statusCode": 200,
+        "body": json.dumps(filtered_data, cls=DecimalEncoder),
+        "headers": {
+            "Access-Control-Allow-Origin": "*",  # Allow all origins
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+            "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+        }
+    }

@@ -57,6 +57,14 @@ functions:
       - httpApi:
           path: /get_products
           method: get
+  
+  search_by_name_products:
+    handler: handlers.product_handler.search_by_name
+    events:
+      - httpApi:
+          path: /get_products/{name}
+          method: get
+
   post_product:
     handler: handlers.product_handler.post_product
     events:

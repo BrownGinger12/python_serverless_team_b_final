@@ -69,7 +69,7 @@ class DynamoDB:
                 Key=key,
                 UpdateExpression=update_expression,
                 ExpressionAttributeValues=expression_values,
-                ReturnValues="UPDATED_NEW"
+                ReturnValues="ALL_NEW"
             )
             return {"statusCode": 200, "message": "Item updated successfully", "updatedAttributes": response.get("Attributes", {})}
         except Exception as e:

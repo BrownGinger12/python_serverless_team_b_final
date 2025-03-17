@@ -4,6 +4,7 @@ from gateways.dynamodb_gateway import DynamoDB
 from helper.helper_func import DecimalEncoder, generate_code
 import os
 from models.order import Order
+from models.product import Product
 from datetime import datetime
 import time
 
@@ -64,9 +65,44 @@ def generate_order_id():
 def post_order(event, context):
     try:
         body = json.loads(event["body"], parse_float=Decimal)
+
+
+        product = Product(product_id=body["product_id"])
+
+        prod_data = product.get()
+
+        if not prod_data.get('data'):
+            return {
+                "body": {"statusCode": 404, "message": "product does not exist"},
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",  # Allow all origins
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                    "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+                }
+            }
         
+
+        if isinstance(body.get("quantity"), str):  # Ensure "quantity" exists and is a string
+            try:
+                body["quantity"] = int(body["quantity"])
+            except ValueError:
+                raise ValueError(f"Invalid quantity value: {body.get('quantity')}. Must be a valid number.")
+
+        if body["quantity"] > prod_data['data'].get("quantity"):
+            return {
+                "body": {"statusCode": 500, "message": "quantity is greater than current stock"},
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",  # Allow all origins
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",  # Allowed HTTP methods
+                    "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
+                }
+            }
         
-        total_amount = body["quantity"]*body.get("price", 0) 
+
+        price_per_unit = prod_data['data'].get("price")
+
+        total_amount = body["quantity"]*price_per_unit
+        
 
         order = Order(
             order_id=body.get("order_id") or generate_order_id(),
@@ -118,7 +154,7 @@ def get_order(order_id):
         response = order.get()
         
         return {
-            "body": json.dumps(response, cls=DecimalEncoder),
+            "body": response,
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Allow all origins
                 "Access-Control-Allow-Methods": "GET",  # Allowed HTTP methods
@@ -178,5 +214,3 @@ def update_order(order_id, body):
                 "Access-Control-Allow-Methods": "PUT",  # Allowed HTTP methods
                 "Access-Control-Allow-Headers": "Content-Type"  # Allowed headers
             }}
-
-    

@@ -106,7 +106,7 @@ def update_total_quantity(event, context):
             data = product.get()['data']
             print(data)
 
-            sum = data["quantity"] + body.get("quantity")
+            sum = int(data["quantity"]) + int(body.get("quantity"))
             print(sum)
             response = product.update({"quantity": int(sum)})
            

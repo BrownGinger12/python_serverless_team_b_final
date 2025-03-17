@@ -1,8 +1,10 @@
 from datetime import datetime
 import decimal
 import os
+import json
 from gateways.dynamodb_gateway import DynamoDB
-from helper.helper_func import build_update_expression, validate_update_product
+from helper.helper_func import build_update_expression, validate_update_product, DecimalEncoder
+from models.EventBridgeEvent import EventbridgeEvent
 
 db_handler = DynamoDB(os.getenv("ORDERS_TABLE"))
 
@@ -55,8 +57,10 @@ class Order:
 
     def validate_quantity(self, quantity):
         if not isinstance(quantity, (int, float)):
-            raise ValueError("Quantity must be a contact_number.")
-    
+            raise ValueError("Quantity must be a number.")
+        if quantity <= 0:
+            raise ValueError("Quantity cannot be negative")
+        
     def validate_product_name(self, product_name):
         """Checks if product_name is empty."""
         if not isinstance(product_name, str) or not product_name.strip():
@@ -82,9 +86,17 @@ class Order:
         self.validate_product_order()
         
         response = db_handler.put_item(self.get_data())
+
+        data = self.get_data()
+
+        data['quantity'] = -data['quantity']
     
         if response["statusCode"] == 200:
             print("Notice: Product successfully ordered!")
+            event = EventbridgeEvent("product_added", json.dumps(data, cls=DecimalEncoder))
+            event.send()
+            event = EventbridgeEvent("stocks_added", json.dumps(data, cls=DecimalEncoder))
+            event.send()
         
         return response
     
@@ -112,7 +124,14 @@ class Order:
             response = db_handler.update_item({"order_id": self.order_id}, expression_to_update, expression_val)
                 
             if response["statusCode"] == 200:
+                if body.get("order_status") == "cancelled":
+                    event = EventbridgeEvent("product_added", json.dumps(response["updatedAttributes"], cls=DecimalEncoder))
+                    event.send()
+                    event = EventbridgeEvent("stocks_added", json.dumps(response["updatedAttributes"], cls=DecimalEncoder))
+                    event.send()
+        
                 print("Notice: order updated successfully!")
+                    
         
             return response
         
